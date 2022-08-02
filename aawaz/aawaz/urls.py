@@ -22,6 +22,8 @@ urlpatterns = [
   path('admin/', admin.site.urls),
   path('',include('user_management.urls')),
   path('api-token-auth/', views.obtain_auth_token),
-  path('auth/', include('rest_framework_social_oauth2.urls')),
+  path('dj-rest-auth/', include('dj_rest_auth.urls'), name='home'),
+  path('dj-rest-auth/registration/', include('dj_rest_auth.registration.urls')),
+  path('aawaz_admin/', include('admin_panel.urls'))
 ]
 

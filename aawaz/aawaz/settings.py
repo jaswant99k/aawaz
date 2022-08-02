@@ -9,8 +9,10 @@ https://docs.djangoproject.com/en/3.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
-
+import os
 from pathlib import Path
+from datetime import timedelta
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,12 +42,22 @@ INSTALLED_APPS = [
     'rest_framework',
     'user_management',
     'rest_framework.authtoken',
-    'oauth2_provider',
-    'social_django',
-    'rest_framework_social_oauth2',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.facebook',
+    'allauth.socialaccount.providers.google',
+    'admin_panel',
+    'import_export',
+    'tags',
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -53,7 +65,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'social_django.middleware.SocialAuthExceptionMiddleware',
+    #'social_django.middleware.SocialAuthExceptionMiddleware',
 ]
 
 ROOT_URLCONF = 'aawaz.urls'
@@ -75,49 +87,21 @@ TEMPLATES = [
         },
     },
 ]
+SITE_ID = 1
+ACCOUNT_EMAIL_VERIFICATION = 'none'
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': ( 
-        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',  # django-oauth-toolkit >= 1.0.0
-        'rest_framework_social_oauth2.authentication.SocialAuthentication',
-    )
-}
+LOGIN_REDIRECT_URL = 'home'
 
-AUTHENTICATION_BACKENDS = (
-    'social_core.backends.facebook.FacebookAppOAuth2',
-    'social_core.backends.facebook.FacebookOAuth2',
+AUTHENTICATION_BACKENDS = [
 
-    # django-rest-framework-social-oauth2
-    'rest_framework_social_oauth2.backends.DjangoOAuth2',
-
-    # Django
+    # Needed to login by username in Django admin, regardless of `allauth`
     'django.contrib.auth.backends.ModelBackend',
-)
 
-# Facebook configuration
+    # `allauth` specific authentication methods, such as login by e-mail
+    'allauth.account.auth_backends.AuthenticationBackend',
 
-SOCIAL_AUTH_FACEBOOK_KEY = '3267240713594871'
-SOCIAL_AUTH_FACEBOOK_SECRET = '3267240713594871|esLLIRy-l_rExjn3Sp5unGNP4eA'
-SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/'
+]
 
-SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
-SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
-'fields': 'id, name, email' }
-SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
-FACEBOOK_EXTENDED_PERMISSIONS = ['email']
-SOCIAL_AUTH_ADMIN_USER_SEARCH_FIELDS = ['username', 'first_name', 'email']
-SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
-SOCIAL_AUTH_PIPELINE = (
-'social_core.pipeline.social_auth.social_details',
-'social_core.pipeline.social_auth.social_uid',
-'social_core.pipeline.social_auth.auth_allowed',
-'social_core.pipeline.social_auth.social_user',
-'social_core.pipeline.user.get_username',
-'social_core.pipeline.social_auth.associate_by_email',
-'social_core.pipeline.user.create_user',
-'social_core.pipeline.social_auth.associate_user',
-'social_core.pipeline.social_auth.load_extra_data',
-'social_core.pipeline.user.user_details', )
 
 WSGI_APPLICATION = 'aawaz.wsgi.application'
 
@@ -169,9 +153,74 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = '/static/'
+#STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "static_cdn")
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+    os.path.join(BASE_DIR, "media"),
+]
+STATIC_URL = "/static/"
+MEDIA_URL = "/media/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+SOCIALACCOUNT_PROVIDERS = {
+ 'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+           'access_type': 'online',
+        }
+    }
+}
+
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
+SOCIALACCOUNT_EMAIL_REQUIRED = False
+
+
+
+REST_USE_JWT = True
+
+
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True, # IMPORTANT
+    'BLACKLIST_AFTER_ROTATION': True, # IMPORTANT
+    'UPDATE_LAST_LOGIN': True,
+}
+
+
+FIREBASE_AUTH = {
+    'FIREBASE_CREDENTIALS': {
+        "type": "service_account",
+        "project_id": "awaazproject-34fb8",
+        "private_key_id": "d5122cf387b5b4a6714d6100700a66cbfa864f1c",
+        "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDAXz54VrOBwtDN\nAKk8CaBc+9N8g/ZEk4uoFGz54I7ygg6ld2TkRoyyEFPad5SrEC3ig4xplC/lRwDX\nW/bYZE7magIEehTUCMlA0/rrNap12UGPm7iwQ667YopvHQUIY/yiCQOCG2k/SJHx\nFyQx+wuzhSzLTycpy+YGtAWFzecyOlu+u5xip4EablUUcgTbhCDaFJxHlCXh1wh7\nVW/aWIyWPK4kT3EIBvM6O+33dq/hVMvV4B8ziVVvsysbT1DhI7c3xjWmube7eGGC\npvvd2FzoerMCLfR51xmm1y/BCf6tL7xAv4I9rxTmIAv4+yemg2Jt/t/+BagoFm2G\neia4q7s3AgMBAAECggEARP8EJ2IlYOGQRS67BBsJxr/Vgv/LiJ4IxYCJ83dcndMS\n0LsJVyyMkuLzSFSCYHZdlrQK3OU25nt4bEWCO+uCNvcHgTaOGNyL3jIJeWoWmM0S\nzCCUdbfYyEGYGDEm2HMQLceg1/3f2kA7g+aCZ2C8uicGQWdCyyVj+7x+jJakmOkf\n3ed2tH9LiONsPeEG1KRkW6SjOSmdudmy/iO7uVM1ACnux0z7Sis/PJYIja89d+UR\nDnAPYtGfLtE1TOKOaEOTA5feUT4Ai11CCiE26T8/mynP4pAPJk4eLu0utVzkF886\nLPDndXmcSnWscNE7cdKzmtZXZMYAWD5k1+5pgWVUQQKBgQD9bRjKMkU6uS17Ebp2\n6enY7hCzNIcghUu23xLEkqcfzgUosbidutiaylBCCSgp50Gu/NY4IBHI+GG7IwHE\nnswiCTswcs5tWvMQsI7JpiFyrgDbqYsCz5SoQgYU2lpRiNX2qNTsPkd2aaWEec2z\nAZy7ZzbuHvl1dKWSr4HoHc/QQQKBgQDCU2hcr4l/rmaSR1xI+AJ3A7hAbEcWf7vs\nAQF7aGC+7IdG9ogYID58rzo4z1cZMKCs4dOV2g38rAbQ4hIDncc9iiCYAfxLN5P0\nUCwVMuS61j8Pw2nDej+xbWfoIynK/J3XWBJxYLXTL/a80GmC9x22iPI7eMxJuNRO\nQRhNl9atdwKBgQClFCWrwCc8Y1du7VNrFl/PgPO76CGFW47AZnrRNT5MB2Vw5qN9\nizKBUfwJp/FTqmIs3GGmWa18Hd97iQgjzdTm7uBxZLd2oGHoozm/vMnY6+N/Muds\nQ09wcuGHP9zJc7r8W2mnIcJnLdY1fyowyoIPyOINJnwUuJEKBe03CARQgQKBgQCp\nhcHBOZElxarNaVtkfJcJ5EDUUqEhS4VQuP/l/ISJiiXpDiBji513gBW2gYpl+znw\nF4FRdMxG5Ht9tfopFXc+hEUy1miV5YI428fZJnDLXSPeSIb3dKojymGe7S4EWqQH\nvFk6dzenaGxDAz1IdvOAza8jmpn8pjTvn3HoHtG0uQKBgQDaWKdcWl1jzWEy57II\nJziNPfFu+B3QKveWcn1gYuiqw1ny4BMi0ffQnMPzVsBdk+Rvkh3u9YBJPLOAnmme\nQfEiN8C6nZbgLfzEwfLjivhYumkTM5aWrpMNx7o8ghYctMtEInZYYvGfpk2X/mmQ\nD/XQxBxCIc69ZMkR3DhhLe7HJg==\n-----END PRIVATE KEY-----\n",
+        "client_email": "firebase-adminsdk-iho5b@awaazproject-34fb8.iam.gserviceaccount.com",
+        "client_id": "116536491936065302582",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-iho5b%40awaazproject-34fb8.iam.gserviceaccount.com"
+    }
+}
+#CORS_ORIGIN_ALLOW_ALL = True 
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 2,
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        #'dj_rest_auth.utils.JWTCookieAuthentication',
+        #'firebase_auth.authentication.FirebaseAuthentication',
+        'rest_framework_firebase.authentication.FirebaseAuthentication',
+    ]
+}

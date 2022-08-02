@@ -1,108 +1,92 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
+from requests import request
 # Create your views here.
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import UpdateUserProfile, UserSerializer,RegisterSerializer
+from rest_framework.authtoken.models import Token
+from rest_framework import status
+from .models import UserProfile
+from .serializers import UpdateUserProfile, UserSerializer, RegisterSerializer
 from django.contrib.auth.models import User
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import generics
+from allauth.socialaccount.providers.facebook.views import FacebookOAuth2Adapter
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
+
+
+
 
 # Class based view to Get User Details using Token Authentication
 class UserDetailAPI(APIView):
-  authentication_classes = (TokenAuthentication,)
-  permission_classes = (AllowAny,)
-  def get(self,request,*args,**kwargs):
-    print(request.user)
-    user = User.objects.get(id=request.user.id)
-    serializer = UserSerializer(user)
-    return Response(serializer.data)
+    authentication_classes = (TokenAuthentication,)
+    queryset = User.objects.all()
+    permission_classes = (AllowAny,)
+    serializer_class = UserSerializer
 
-#Class based view to register user
+    def get(self, request):
+        user = self.get_object(username = self.request.user)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+    # def get(self):
+    #     user = User.objects.filter(username=self.request.user)
+    #     print(user)
+    #     serializer = UserSerializer(user)
+    #     return Response(serializer.data)
+
+class UserListAPI(generics.ListAPIView):
+    authentication_classes = (TokenAuthentication,)
+    queryset = User.objects.all()
+    permission_classes = (AllowAny,)
+    serializer_class = UserSerializer
+
+# Class based view to register user
 class RegisterUserAPIView(generics.CreateAPIView):
-  permission_classes = (AllowAny,)
-  serializer_class = RegisterSerializer
-
-class ProfileUpdateAPIView(generics.CreateAPIView):
-  authentication_classes = (TokenAuthentication,)
-  permission_classes = (AllowAny,)
-  serializer_class = UpdateUserProfile
-
-
-
-
-from django.http import JsonResponse
-from rest_framework import generics, permissions, status, views
-from rest_framework.response import Response
-from requests.exceptions import HTTPError
-
-from social_django.utils import load_strategy, load_backend
-from social_core.backends.oauth import BaseOAuth2
-from social_core.exceptions import MissingBackend, AuthTokenError, AuthForbidden
-from . import serializers
-
-class SocialLoginView(generics.GenericAPIView):
-    """Log in using facebook"""
-    serializer_class = serializers.SocialSerializer
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, request):
-        """Authenticate user through the provider and access_token"""
-        serializer = self.serializer_class(data=request.data)
+    permission_classes = (AllowAny,)
+    queryset = UserProfile.objects.all()
+    serializer_class = RegisterSerializer
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        provider = serializer.data.get('provider', None)
-        strategy = load_strategy(request)
-        print(provider)
-        try:
-            backend = load_backend(strategy=strategy, name=provider,
-            redirect_uri=None)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        token, created = Token.objects.get_or_create(user=serializer.instance)
+        return Response({'token': token.key}, status=status.HTTP_201_CREATED, headers=headers)
 
-        except MissingBackend:
-            return Response({'error': 'Please provide a valid provider'},
-            status=status.HTTP_400_BAD_REQUEST)
-        try:
-            if isinstance(backend, BaseOAuth2):
-                access_token = serializer.data.get('access_token')
-            user = backend.do_auth(access_token)
-        except HTTPError as error:
-            return Response({
-                "error": {
-                    "access_token": "Invalid token",
-                    "details": str(error)
-                }
-            }, status=status.HTTP_400_BAD_REQUEST)
-        except AuthTokenError as error:
-            return Response({
-                "error": "Invalid credentials",
-                "details": str(error)
-            }, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            authenticated_user = backend.do_auth(access_token, user=user)
-        
-        except HTTPError as error:
-            return Response({
-                "error":"invalid token",
-                "details": str(error)
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        except AuthForbidden as error:
-            return Response({
-                "error":"invalid token",
-                "details": str(error)
-            }, status=status.HTTP_400_BAD_REQUEST)
+class ProfileUpdateAPIView(generics.UpdateAPIView):
+    #authentication_classes = (TokenAuthentication,)
+    permission_classes = (AllowAny,)
+    queryset = UserProfile.objects.all()
+    serializer_class = UpdateUserProfile
+    lookup_field = 'user__username'
 
-        if authenticated_user and authenticated_user.is_active:
-			#generate JWT token
-            login(request, authenticated_user)
-            data={
-                "token": jwt_encode_handler(
-                    jwt_payload_handler(user)
-                )}
-			#customize the response to your needs
-            response = {
-                "email": authenticated_user.email,
-                "username": authenticated_user.username,
-                "token": data.get('token')
-            }
-            return Response(status=status.HTTP_200_OK, data=response)
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Profile updated successfully"})
+
+        else:
+            return Response({"message": "failed", "details": serializer.errors})
+
+
+
+class FacebookLogin(SocialLoginView):
+    adapter_class = FacebookOAuth2Adapter
+
+
+class TestCallBackURL(APIView):
+    def get(self, request):
+        print(1)
+
+#CALLBACK_URL_YOU_SET_ON_GOOGLE="http://localhost:8000//"
+class GoogleLogin(SocialLoginView): # if you want to use Authorization Code Grant, use this
+    adapter_class = GoogleOAuth2Adapter
+    callback_url = "http://localhost:8000/"
+    client_class = OAuth2Client
