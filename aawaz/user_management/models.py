@@ -27,14 +27,18 @@ class UserProfile(BaseModel):
         on_delete=models.CASCADE,
         primary_key=True,
     )
+    #nickname = models.CharField(max_length=30, unique=True)
     profile_image = models.ImageField(upload_to ='uploads/profile/')
     mobile_number = models.CharField(max_length=15)
     cover_image = models.ImageField(upload_to='uploads/cover/')
     date_of_birth = models.DateField(default=date.today)
     gender = models.CharField(max_length=20, choices=Choices().gender)
     about = models.TextField(max_length=500)
-    hometown = models.CharField(max_length=100)
+    location = models.CharField(max_length=100)
     lavel = models.ForeignKey('UserLavel', on_delete=models.PROTECT, default=1)
+    last_activity = models.DateTimeField(auto_now=True)
+    email_verified = models.BooleanField(default=True)
+    signid_in_through = models.CharField(max_length=20)
     @property
     def age(self):
         days_in_year = 365.2425   

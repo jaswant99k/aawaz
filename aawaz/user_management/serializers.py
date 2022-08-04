@@ -8,12 +8,17 @@ from django.contrib.auth.password_validation import validate_password
 from .models import UserProfile
 import jwt
 
-
+class UpdateUserProfile(serializers.ModelSerializer):
+    
+    class Meta:
+        model = UserProfile
+        fields = ('mobile_number', 'profile_image', 'user','cover_image','date_of_birth','gender','about','hometown','lavel','age', 'user')
 # Serializer to Get User Details using Django Token Authentication
 class UserSerializer(serializers.ModelSerializer):
+    user_detail = UpdateUserProfile(read_only = True)
     class Meta:
         model = User
-        fields = ["id", "first_name", "last_name", "username"]
+        fields = ["id", "first_name", "last_name", "username","user_detail",]
 
 
 # Serializer to Register User
@@ -58,17 +63,5 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
-class UpdateUserProfile(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = ('mobile_number', 'profile_image', 'user','cover_image','date_of_birth','gender','about','hometown','lavel','age', 'user')
 
 
-
-
-# class SocialSerializer(serializers.Serializer):
-#   """
-#   Serializer which accepts an OAuth2 access token and provider.
-#   """
-#   provider = serializers.CharField(max_length=255, required=True)
-#   access_token = serializers.CharField(max_length=4096, required=True, trim_whitespace=True)

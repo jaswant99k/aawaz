@@ -1,9 +1,10 @@
 from django.urls import include, path
-from .views import GoogleLogin, ProfileUpdateAPIView, TestCallBackURL, UserDetailAPI, RegisterUserAPIView, FacebookLogin, UserListAPI
+from .views import GoogleLogin, ProfileUpdateAPIView, TestCallBackURL, UserDetailAPI, RegisterUserAPIView, FacebookLogin, UserListAPI, user_details
 
 urlpatterns = [
-  path("get-details/",UserDetailAPI.as_view()),
+  #path("get-details/",UserDetailAPI.as_view()),
   path("get-list-users/",UserListAPI.as_view()),
+  path("get-details/",user_details),
   path('register/',RegisterUserAPIView.as_view()),
   path('profile-update/<str:user__username>', ProfileUpdateAPIView.as_view()),
   path('rest-auth/', include('rest_auth.urls')),

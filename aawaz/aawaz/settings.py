@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'admin_panel',
     'import_export',
     'tags',
+    'products',
 ]
 
 MIDDLEWARE = [
@@ -219,8 +220,12 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        #'rest_framework.permissions.AllowAny',
         #'dj_rest_auth.utils.JWTCookieAuthentication',
         #'firebase_auth.authentication.FirebaseAuthentication',
-        'rest_framework_firebase.authentication.FirebaseAuthentication',
-    ]
+        #'rest_framework_firebase.authentication.FirebaseAuthentication',
+    ],
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #         'rest_framework.permissions.AllowAny',
+    #     ],
 }
